@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text.RegularExpressions;
 
 namespace Calculator
 {
@@ -18,9 +19,17 @@ namespace Calculator
         private static int[] Sanitize(string input)
         {
             List<int> disAllowedNegativeNumbers = new List<int>();
-            string[] separators = { ",", "\\n" };
+            List<string> separators = new List<string>{ ",", "\\n" };
+            
+            Regex customDelimiter = new Regex(@"(//(.)\\n)");
+            Match foundCustomDelimiter = customDelimiter.Match(input);
+            if (foundCustomDelimiter.Success)
+            {
+                input = input.Split(foundCustomDelimiter.Groups[1].Value, StringSplitOptions.None)[1]; // Split off the custom delimiter piece from input
+                separators.Add(foundCustomDelimiter.Groups[2].Value); // Add custom delimiter to separators
+            }
 
-            var numbersToAdd = input.Split(separators, StringSplitOptions.None)
+            var numbersToAdd = input.Split(separators.ToArray(), StringSplitOptions.None)
                                 .Select(
                                     number => {
                                         try
