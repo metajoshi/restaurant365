@@ -21,19 +21,31 @@ namespace Calculator
             List<int> disAllowedNegativeNumbers = new List<int>();
             List<string> separators = new List<string>{ ",", "\\n" };
 
-            List<string> delimiterRegex = new List<string> { @"(//(.)\\n)", @"(//\[(.+)\]\\n)" };
+            List<string> delimiterRegexes = new List<string> { @"(//(.)\\n)", @"(//(?:\[(.*?)\])+?\\n)" };
+            const int INPUT_GROUP_INDEX = 1, DELIMITER_GROUP_INDEX = 2;
+            string splitInputFromDelimiters = input;
 
-            foreach (var regexString in delimiterRegex)
+
+            delimiterRegexes.ForEach(regexString =>
             {
-                Match foundCustomDelimiter = new Regex(regexString).Match(input);
-                if (foundCustomDelimiter.Success)
+                List<Match> matches = new Regex(regexString).Matches(input).ToList();
+                if (matches.Count > 0 && matches[0].Groups.Count > 0)
                 {
-                    input = input.Split(foundCustomDelimiter.Groups[1].Value, StringSplitOptions.None)[1]; // Split off the custom delimiter piece from input
-                    separators.Add(foundCustomDelimiter.Groups[2].Value); // Add custom delimiter to separators
+                    splitInputFromDelimiters = input.Split(matches[0].Groups[INPUT_GROUP_INDEX].Value, StringSplitOptions.None)[1]; // Split off the custom delimiter piece from input
+                    matches.ForEach(match =>
+                    {
+                        if (match.Success)
+                        {
+                            foreach (var capture in match.Groups[DELIMITER_GROUP_INDEX].Captures.ToList())
+                            {
+                                separators.Add(capture.Value); // Add custom delimiter to separators
+                            }
+                        }
+                    });
                 }
-            }
+            });
 
-            var numbersToAdd = input.Split(separators.ToArray(), StringSplitOptions.None)
+            var numbersToAdd = splitInputFromDelimiters.Split(separators.ToArray(), StringSplitOptions.None)
                                 .Select(
                                     number => {
                                         try
