@@ -28,9 +28,6 @@ namespace Calculator
                                         }
                                     })
                                 .ToArray();
-            if (numbersToAdd.Length > 2)
-                throw new FormatException("Please provide only 2 numbers separated by a comma.");
-            
 
             return numbersToAdd;
         }
