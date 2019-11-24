@@ -16,7 +16,8 @@ namespace Calculator
 
         private static int[] Sanitize(string input)
         {
-            var numbersToAdd = input.Split(',')
+            string[] separators = { ",", "\\n" };
+            var numbersToAdd = input.Split(separators, StringSplitOptions.None)
                                 .Select(
                                     number => {
                                         try
