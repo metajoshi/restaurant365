@@ -20,13 +20,17 @@ namespace Calculator
         {
             List<int> disAllowedNegativeNumbers = new List<int>();
             List<string> separators = new List<string>{ ",", "\\n" };
-            
-            Regex customDelimiter = new Regex(@"(//(.)\\n)");
-            Match foundCustomDelimiter = customDelimiter.Match(input);
-            if (foundCustomDelimiter.Success)
+
+            List<string> delimiterRegex = new List<string> { @"(//(.)\\n)", @"(//\[(.+)\]\\n)" };
+
+            foreach (var regexString in delimiterRegex)
             {
-                input = input.Split(foundCustomDelimiter.Groups[1].Value, StringSplitOptions.None)[1]; // Split off the custom delimiter piece from input
-                separators.Add(foundCustomDelimiter.Groups[2].Value); // Add custom delimiter to separators
+                Match foundCustomDelimiter = new Regex(regexString).Match(input);
+                if (foundCustomDelimiter.Success)
+                {
+                    input = input.Split(foundCustomDelimiter.Groups[1].Value, StringSplitOptions.None)[1]; // Split off the custom delimiter piece from input
+                    separators.Add(foundCustomDelimiter.Groups[2].Value); // Add custom delimiter to separators
+                }
             }
 
             var numbersToAdd = input.Split(separators.ToArray(), StringSplitOptions.None)
