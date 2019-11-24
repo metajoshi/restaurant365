@@ -28,6 +28,8 @@ namespace Calculator
                                             var convertedNumber = Convert.ToInt32(number);
                                             if (convertedNumber < 0)
                                                 disAllowedNegativeNumbers.Add(convertedNumber);
+                                            if (convertedNumber > 1000)
+                                                return 0;
                                             return convertedNumber;
                                         } catch(Exception e)
                                         {
