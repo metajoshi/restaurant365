@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 
 namespace Calculator
@@ -16,19 +17,27 @@ namespace Calculator
 
         private static int[] Sanitize(string input)
         {
+            List<int> disAllowedNegativeNumbers = new List<int>();
             string[] separators = { ",", "\\n" };
+
             var numbersToAdd = input.Split(separators, StringSplitOptions.None)
                                 .Select(
                                     number => {
                                         try
                                         {
-                                            return Convert.ToInt32(number);
+                                            var convertedNumber = Convert.ToInt32(number);
+                                            if (convertedNumber < 0)
+                                                disAllowedNegativeNumbers.Add(convertedNumber);
+                                            return convertedNumber;
                                         } catch(Exception e)
                                         {
                                             return 0;
                                         }
                                     })
                                 .ToArray();
+
+            if (disAllowedNegativeNumbers.Count > 0)
+                throw new ArgumentException($"Negative numbers are not allowed: {string.Join(',', disAllowedNegativeNumbers)}");
 
             return numbersToAdd;
         }
