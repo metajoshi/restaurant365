@@ -5,73 +5,110 @@ using System.Text.RegularExpressions;
 
 namespace Calculator
 {
-    class Program
+    public static class Calculator
     {
-        static void Main(string[] args)
+        public static int PerformAddition(string input, bool allowNegativeNumbers, bool limitTwoArguments, bool numberLessThanThousand)
         {
-            var input = Console.ReadLine();
-            var numbersToAdd = Sanitize(input);
+            const string SINGLE_SEPARATOR_REGEX = @"(//(.)\\n)", MULTI_SEPARATOR_REGEX = @"(//(?:\[(.*?)\])+?\\n)";
+            List<string> customSeparatorRegexes = new List<string> { SINGLE_SEPARATOR_REGEX, MULTI_SEPARATOR_REGEX };
+            string separatorString, argumentString;
 
-            Console.WriteLine(Add(numbersToAdd));
-            Console.Read();
+            SplitSeparatorsFromArguments(input, customSeparatorRegexes, out separatorString, out argumentString);
+            var separators = ExtractSeparatorsFromInput(separatorString, customSeparatorRegexes);
+            var arguments = ExtractArgumentsFromInput(argumentString, allowNegativeNumbers, limitTwoArguments, numberLessThanThousand, separators);
+            return Add(arguments);
         }
 
-        private static int[] Sanitize(string input)
+        static void SplitSeparatorsFromArguments(string input, IEnumerable<string> customSeparatorRegexes, out string separatorString, out string argumentString)
         {
-            List<int> disAllowedNegativeNumbers = new List<int>();
-            List<string> separators = new List<string>{ ",", "\\n" };
-
-            List<string> delimiterRegexes = new List<string> { @"(//(.)\\n)", @"(//(?:\[(.*?)\])+?\\n)" };
-            const int INPUT_GROUP_INDEX = 1, DELIMITER_GROUP_INDEX = 2;
-            string splitInputFromDelimiters = input;
-
-
-            delimiterRegexes.ForEach(regexString =>
+            string localSeparators = "", localArguments = input;
+            customSeparatorRegexes.ToList().ForEach(regexString =>
             {
                 List<Match> matches = new Regex(regexString).Matches(input).ToList();
                 if (matches.Count > 0 && matches[0].Groups.Count > 0)
                 {
-                    splitInputFromDelimiters = input.Split(matches[0].Groups[INPUT_GROUP_INDEX].Value, StringSplitOptions.None)[1]; // Split off the custom delimiter piece from input
+                    localArguments = input.Split(matches[0].Groups[1].Value, StringSplitOptions.None)[1];
+                    localSeparators = input.Replace(localArguments, "");
+                }
+            });
+
+            separatorString = localSeparators;
+            argumentString = localArguments;
+        }
+
+        static List<string> ExtractSeparatorsFromInput(string input, IEnumerable<string> customSeparatorRegexes)
+        {
+            List<string> defaultSeparators = new List<string> { ",", "\\n" };
+
+            customSeparatorRegexes.ToList().ForEach(regexString =>
+            {
+                List<Match> matches = new Regex(regexString).Matches(input).ToList();
+                if (matches.Count > 0 && matches[0].Groups.Count > 0)
+                {
                     matches.ForEach(match =>
                     {
                         if (match.Success)
                         {
-                            foreach (var capture in match.Groups[DELIMITER_GROUP_INDEX].Captures.ToList())
+                            foreach (var capture in match.Groups[2].Captures.ToList())
                             {
-                                separators.Add(capture.Value); // Add custom delimiter to separators
+                                defaultSeparators.Add(capture.Value); // Add custom separator to separator list
                             }
                         }
                     });
                 }
             });
 
-            var numbersToAdd = splitInputFromDelimiters.Split(separators.ToArray(), StringSplitOptions.None)
+            return defaultSeparators;
+        }
+
+        static int[] ExtractArgumentsFromInput(string input, bool allowNegativeNumbers, bool limitTwoArguments, bool numberLessThanThousand, IEnumerable<string> separators)
+        {
+            List<int> negativeNumbersInInput = new List<int>();
+            var numbersToAdd = input.Split(separators.ToArray(), StringSplitOptions.None)
                                 .Select(
                                     number => {
                                         try
                                         {
                                             var convertedNumber = Convert.ToInt32(number);
-                                            if (convertedNumber < 0)
-                                                disAllowedNegativeNumbers.Add(convertedNumber);
-                                            if (convertedNumber > 1000)
+                                            if (allowNegativeNumbers && convertedNumber < 0)
+                                                negativeNumbersInInput.Add(convertedNumber);
+                                            if (numberLessThanThousand && convertedNumber > 1000)
                                                 return 0;
                                             return convertedNumber;
-                                        } catch(Exception e)
+                                        }
+                                        catch (Exception e)
                                         {
                                             return 0;
                                         }
                                     })
                                 .ToArray();
 
-            if (disAllowedNegativeNumbers.Count > 0)
-                throw new ArgumentException($"Negative numbers are not allowed: {string.Join(',', disAllowedNegativeNumbers)}");
+            if (limitTwoArguments && numbersToAdd.Length > 2)
+                throw new ArgumentException("Only 2 arguments are allowed");
+
+            if (negativeNumbersInInput.Count > 0)
+                throw new ArgumentException($"Negative numbers are not allowed: {string.Join(',', negativeNumbersInInput)}");
 
             return numbersToAdd;
         }
 
-        protected static int Add(int[] numbersToAdd)
+        static int Add(int[] arguments)
         {
-            return numbersToAdd.Sum();
+            return arguments.Sum();
         }
+    }
+
+    class Program
+    {
+        static void Main(string[] args)
+        {
+            var input = Console.ReadLine();
+            bool allowNegativeNumbers = false, limitTwoArguments = false, numberLessThanThousand = false;
+            var result = Calculator.PerformAddition(input, allowNegativeNumbers, limitTwoArguments, numberLessThanThousand);
+            Console.WriteLine(result);
+            Console.Read();
+        }
+
+
     }
 }
